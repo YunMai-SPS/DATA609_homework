@@ -1,3 +1,3 @@
 # DATA609_homework
 
-### Assignment: week1 and week2
+#### 1. Assignment: week1 and week2  
