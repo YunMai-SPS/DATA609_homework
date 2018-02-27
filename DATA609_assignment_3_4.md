@@ -18,10 +18,12 @@ Page 113: \#2
 
 1.  The following table gives the elongation e in inches per inch (in./in.) for a given stress S on a steel wire measured in pounds per square inch (*l**b*/*i**n*.<sup>2</sup>). Test the model *e* = *c*<sub>1</sub>*S* by plotting the data. Estimate c1 graphically.
 
-    |             |   NA|   NA|   NA|   NA|   NA|   NA|   NA|   NA|   NA|   NA|     |
-    |-------------|----:|----:|----:|----:|----:|----:|----:|----:|----:|----:|-----|
-    | S (x 10^-3) |    5|   10|   20|   30|   40|   50|   60|   70|   80|   90| 100 |
-    | e (x 10^5)  |    0|   19|   57|   94|  134|  173|  216|  256|  297|  343| 390 |
+**Solution**
+
+|             |     |   NA|   NA|   NA|   NA|   NA|   NA|   NA|   NA|   NA|   NA|
+|-------------|-----|----:|----:|----:|----:|----:|----:|----:|----:|----:|----:|
+| S (x 10^-3) | 5   |   10|   20|   30|   40|   50|   60|   70|   80|   90|  100|
+| e (x 10^5)  | 0   |   19|   57|   94|  134|  173|  216|  256|  297|  343|  390|
 
 Plot the data as follows:
 
@@ -36,21 +38,23 @@ Page 121: \#2.a
 
 2.For each of the following data sets, formulate the mathematical model that minimizes the largest deviation between the data and the line y = ax+b. If a computer is available, solve for the estimates of a and b.
 
+**Solution**
+
 ``` r
 anly <- data.frame("x"=c(1.0, 2.3, 3.7, 4.2, 6.1, 7.0),"y"=c(3.6, 3.0, 3.2, 5.1, 5.3, 6.8))
 anly <- as.data.frame(t(anly))
-rownames(elg) <- c("x","y")
-colnames(elg) <- ' '
+rownames(anly) <- c("x","y")
+colnames(anly) <- ' '
 #x = kable(elg, format="pandoc") %>%
 #    kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 #cat(x[3:4], sep="\n")
 kable(anly)
 ```
 
-|     |   V1|   V2|   V3|   V4|   V5|   V6|
-|-----|----:|----:|----:|----:|----:|----:|
-| x   |  1.0|  2.3|  3.7|  4.2|  6.1|  7.0|
-| y   |  3.6|  3.0|  3.2|  5.1|  5.3|  6.8|
+|     |     |   NA|   NA|   NA|   NA|   NA|
+|-----|-----|----:|----:|----:|----:|----:|
+| x   | 1.0 |  2.3|  3.7|  4.2|  6.1|  7.0|
+| y   | 3.6 |  3.0|  3.2|  5.1|  5.3|  6.8|
 
 ``` r
 #transpose the dataframe for plot
@@ -122,6 +126,7 @@ These inequations could be rewritten as follows:
 -r+(a\*x6+b) &lt;= y6
 
 $$
+\\begin{equation}
 \\begin{bmatrix}
     -1       & -x\_{1} & -1 \\\\
     -1       & x\_{1} &  1 \\\\
@@ -146,26 +151,143 @@ $$
     -y\_{6} \\\\
     y\_{6}
 \\end{bmatrix}
+\\end{equation}
+$$
+ let:
+$$
+\\begin{equation}
+{f} = 
+\\begin{pmatrix}
+  1   \\\\
+  0  \\\\
+  0
+  \\end{pmatrix}
+\\end{equation}
+$$
+ and
+$$
+\\begin{equation}
+{x} = \\begin{pmatrix}
+  r   \\\\
+  a  \\\\
+  b
+  \\end{pmatrix}
+\\end{equation}
 $$
 
-let:
 constraints : Ax &lt;= c
 
-objective:*m**a**x* *f*<sup>*T*</sup>*x*
+objective function:*m**a**x* *f*<sup>*T*</sup>*x*
+
+``` r
+suppressMessages(suppressWarnings(library(linprog)))  
+# form c vector 
+cvec <- c(1, 0, 0)
+
+# form b vector 
+bvec <- list(rep(0,12))
+for(i in 1:nrow(t_anly) ){
+  bvec[[2*i-1]] <- (rep(t_anly$y[i],2)*c(-1,1))[1]
+  bvec[[2*i]] <- (rep(t_anly$y[i],2)*c(-1,1))[2]
+  j=i+1
+}
+bvec <- as.numeric(bvec)
+
+# form matrix A
+A_x <- as.list(rep(0,12))
+for(i in 1:nrow(t_anly) ){
+  A_x[2*i-1] <- (rep(t_anly$x[i],2)*c(-1,1))[1]
+  A_x[2*i] <- (rep(t_anly$x[i],2)*c(-1,1))[2]
+}
+A_x <- as.numeric(A_x)
+
+A <- as.matrix(data.frame(rep(-1,12), A_x,rep(c(-1,1),6)))
+
+res <- solveLP(cvec,bvec,A,maximum=FALSE)
+res 
+```
 
     ## 
     ## 
     ## Results of Linear Programming / Linear Optimization
     ## 
-    ## Objective function (Minimum): 1.9 
+    ## Objective function (Minimum): 0.92 
     ## 
+    ## Iterations in phase 1: 7
+    ## Iterations in phase 2: 1
     ## Solution
-    ##   opt
-    ## 1 1.9
-    ## 2 4.9
-    ## 3 0.0
+    ##        opt
+    ## 1 0.920000
+    ## 2 0.533333
+    ## 3 2.146667
+    ## 
+    ## Basic Variables
+    ##           opt
+    ## 1    0.920000
+    ## 2    0.533333
+    ## 3    2.146667
+    ## S 2  1.840000
+    ## S 3  1.293333
+    ## S 4  0.546667
+    ## S 5  1.840000
+    ## S 7  0.206667
+    ## S 8  1.633333
+    ## S 9  1.020000
+    ## S 10 0.820000
+    ## S 12 1.840000
+    ## 
+    ## Constraints
+    ##      actual dir bvec     free  dual dual.reg
+    ## 1  -3.60000  <= -3.6 0.000000 0.275 2.342857
+    ## 2   1.76000  <=  3.6 1.840000 0.000 1.840000
+    ## 3  -4.29333  <= -3.0 1.293333 0.000 1.293333
+    ## 4   2.45333  <=  3.0 0.546667 0.000 0.546667
+    ## 5  -5.04000  <= -3.2 1.840000 0.000 1.840000
+    ## 6   3.20000  <=  3.2 0.000000 0.500 4.293333
+    ## 7  -5.30667  <= -5.1 0.206667 0.000 0.206667
+    ## 8   3.46667  <=  5.1 1.633333 0.000 1.633333
+    ## 9  -6.32000  <= -5.3 1.020000 0.000 1.020000
+    ## 10  4.48000  <=  5.3 0.820000 0.000 0.820000
+    ## 11 -6.80000  <= -6.8 0.000000 0.225 2.050000
+    ## 12  4.96000  <=  6.8 1.840000 0.000 1.840000
+    ## 
+    ## All Variables (including slack variables)
+    ##           opt cvec     min.c    max.c  marg marg.reg
+    ## 1    0.920000    1 -2.000000       NA    NA       NA
+    ## 2    0.533333    0 -1.350000 1.650000    NA       NA
+    ## 3    2.146667    0 -0.308411 0.574468    NA       NA
+    ## S 1  0.000000    0 -0.275000      Inf 0.275  2.34286
+    ## S 2  1.840000    0 -0.500000 0.611111 0.000       NA
+    ## S 3  1.293333    0 -0.351064      Inf 0.000       NA
+    ## S 4  0.546667    0 -0.500000 1.178571 0.000       NA
+    ## S 5  1.840000    0 -0.500000      Inf 0.000       NA
+    ## S 6  0.000000    0 -0.500000      Inf 0.500  4.29333
+    ## S 7  0.206667    0 -0.421875      Inf 0.000       NA
+    ## S 8  1.633333    0 -0.500000 2.700000 0.000       NA
+    ## S 9  1.020000    0 -0.264706      Inf 0.000       NA
+    ## S 10 0.820000    0 -0.500000 0.562500 0.000       NA
+    ## S 11 0.000000    0 -0.225000      Inf 0.225  2.05000
+    ## S 12 1.840000    0 -0.500000 0.409091 0.000       NA
 
-The formula is: y = 4.9x. The minimum of the largest deviation between the data and the line y = ax+b is r = 1.9.
+The formula is: y = 0.53x+2.15. The minimum of the largest deviation between the data and the line y = ax+b is r = 0.92.
+
+``` r
+# calculate the estimated y by new formula y=4.9x.
+t_anly$y_new <- 0.53*t_anly$x+2.15
+  
+# plot the data
+#plot(t_anly[,2],t_anly[,1])
+g1 <- ggplot(t_anly,aes(x=t_anly[,1]))
+g2 <- g1 + geom_point(aes(y=t_anly[,2]),shape=1) 
+g3 <- g2 + geom_smooth(aes(y=t_anly[,2]),method=lm, se=FALSE,colour='blue')
+g4 <- g3 + xlab(colnames(t_anly)[1])+ylab(colnames(t_anly)[2])
+g5 <- g4 + stat_smooth_func(aes(y=t_anly[,2]),geom="text",method="lm",hjust=0,parse=TRUE) 
+g5 + geom_line(aes(y=t_anly[,3]),colour='red') 
+```
+
+![](DATA609_assignment_3_4_files/figure-markdown_github/unnamed-chunk-6-1.png)
+
+As shown in the figure above, the formula deduced from function stat\_smooth\_func() (red line) is different but close to the formula derived from the linear regression model(blue line). They must used differetnt criteria to fit the model.
 
 Chapter 5. Simulation Modeling
 ------------------------------
@@ -185,7 +307,7 @@ where the quarter circle is taken to be inside the square
 
 Use the equation *π*/4 = *a**r**e**a**Q*/*a**r**e**a**S*.
 
-#### Solution
+**Solution**
 
 We can simulate x and y values with constrains *x* ≥ 0, *y* ≥ 0.When the simulated pair of values satisfies the inequality *x*2 + *y*2 ≤ 1, then the points inside the quarter circle increase one. We apporcimate ??/4 by deviding the number of points simulated in the quarter circle by the total number of simulated points.
 
@@ -230,43 +352,48 @@ Page 194, \# 1
 3.  15 random numbers using x0 = 3043.
 4.  Comment about the results of each sequence. Was there cycling? Did each sequence degenerate rapidly?
 
+**Solution**
+
 ``` r
 suppressMessages(suppressWarnings(library(stringr)))
+new_num <- 0
+sqn <- list()
 rand_gen <- function(n, x0){
-  
-  #1. Start with a four-digit number x0, called the seed.
-  x <- x0
-  
-  #2. Square it to obtain an eight-digit number (add a leading zero if necessary).
-  num_dig <- (nchar(x) + nchar(x) %% 2) * 2
-  
-  #3. Take the middle four digits as the next random number.
-  mid_sq <- function(z){
-    
-    # square number, add leading zeros if appropriate
-    z <- str_sub(paste(c(replicate(num_dig,"0"),z^2), collapse = ""),-num_dig)
-    
-    
-    as.integer(str_sub(z,start = 1 + num_dig/4 , end = num_dig - num_dig/4))
-  }
-  
-  # iterate 
-  if (n > 1) {
-    for (i in 2:n) {
-      x <- append(x, mid_sq(x[length(x)]))
+  for (i in 1:(n-1)){
+    if (new_num == 0){
+      #1. Start with a four-digit number x0, called the seed.
+      x <- x0
+    }else{
+      # or start with a four-digit number from last run
+      x <- new_num
     }
+    
+    #2. Square it to obtain an eight-digit number (add a leading zero if necessary).
+    sq <- as.character(x^2)
+    # put 0 at the begining square product is odd-digit number
+    if (nchar(sq) %%2 == 1){
+      sq <- paste0 ("0",sq)
+    }
+    
+    #3. Take the middle four digits as the next random number.
+    new_num_str <- substr(sq,nchar(sq)/2-1,nchar(sq)/2+2) 
+    new_num <- as.numeric(new_num_str)
+    sqn <- append(sqn,new_num_str)
   }
-  x
+  sqn <- as.data.frame(c(as.character(x0),sqn))
+  colnames(sqn) <- seq(n)
+  sqn
 }
 ```
 
 1.  10 random numbers using x0 = 1009.
 
 ``` r
-(rand_gen(10,1009))
+rand_gen(10,1009)
 ```
 
-    ##  [1] 1009  180  324 1049 1004   80   64   40   16    2
+    ##      1    2    3    4    5    6    7    8    9   10
+    ## 1 1009 0180 3240 4976 7605 8360 8896 1388 9265 8402
 
 1.  20 random numbers using x0 = 653217.
 
@@ -274,22 +401,26 @@ rand_gen <- function(n, x0){
 (rand_gen(20,653217))
 ```
 
-    ##  [1] 653217 692449 485617 823870 761776 302674 611550 993402 847533 312186
-    ## [11] 460098 690169 333248  54229 940784  74534 555317 376970 106380 316704
+    ##        1    2    3    4    5    6    7    8    9   10   11   12   13   14
+    ## 1 653217 9244 4515 3852 8379 2076 3097 5914 9753 1210 4641 5388 0305 9302
+    ##     15   16   17   18   19   20
+    ## 1 5272 7939 0277 7672 8595 8740
 
 1.  15 random numbers using x0 = 3043.
 
 ``` r
-(rand_gen(15,3034))
+(rand_gen(15,3043))
 ```
 
-    ##  [1] 3034 2051 2066 2683 1984 9362 6470 8609 1148 3179 1060 1236 5276 8361
-    ## [15] 9063
+    ##      1    2    3    4    5    6    7    8    9   10   11   12   13   14
+    ## 1 3043 2598 7496 1900 6100 2100 4100 8100 6100 2100 4100 8100 6100 2100
+    ##     15
+    ## 1 4100
 
 1.  Comment about the results of each sequence. Was there cycling? Did each sequence degenerate rapidly?
 
-For a, No cycling, but the sequence is degenerating rapidly.
+For a, there is no cycling. Sometimes the sequence is degenerating rapidly such as from 1009 to 180 but there is no trend showing the sequence is degenerating.
 
-For b, No obvious cycling or degeneration in the first 20 draws.
+For b, there is no cycling. Rapid degeneration only shows between the first number (653217) and the second number (9244) in the first 20 draws.
 
-For c: The sequence of 4 numbers begins to cycle at the 9th value.No rapid degeneration observed.
+For c, a sequence of 4 numbers(6100,2100,4100,8100) begins to cycle from the 5th value. No rapid degeneration observed.
