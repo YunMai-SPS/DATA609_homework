@@ -1,0 +1,261 @@
+---
+title: "DATA609_assignment5_6"
+author: "Yun Mai"
+date: "March 6, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressMessages(suppressWarnings(library(knitr)))
+suppressMessages(suppressWarnings(library(ggplot2)))
+```
+
+Page 228: #1
+Page 232: #1
+Page 240: #1, #2
+
+Page 251: #2
+Page 264: #6
+Page 268: #6 (i.e., only question #6 in section 7.2)
+Page 278: #6 (i.e., only question #6 in section 7.2)
+Page 284: #1
+Page 295: #3
+
+##  Chapter 6 Descrete Probabilistic Modeling
+
+### 6.1 Probabilistic Modeling with Descrete Systems
+
+####Page 228: #1
+
+ 1. Consider a model for the long-term dining behavior of the students at College USA. It is found that 25% of the students who eat at the college's Grease Dining Hall return to eat there again, whereas those who eat at Sweet Dining Hall have a 93% return rate. These are the only two dining halls available on campus, and assume that all students eat at one of these halls. Formulate a model to solve for the long-term percentage of students eating at each hall.
+ 
+**Solution**
+
+To fomulate a model for the long-term distribution of students in these two dinnign hall, we define the following variables:
+
+$g_n$ = the percentage of student going to Grease Dining Hall at the end of period
+$s_n$ = the percentage of student going to Sweet Dining Hall at the end of period
+
+The probability model:
+
+$g_{n+1}= 0.25g_n + 0.7s_n $ 
+$a_{n+1}= 0.93an + 0.75g_n $ 
+
+The transition matrix:
+
+```{r}
+suppressMessages(suppressWarnings(library(markovchain)))
+#setting up transition matrix
+
+dinninghall <- c("Grease", "Sweet")
+diningTransition <- matrix(c(0.25, 0.75, 
+                            0.07, 0.93),
+                            byrow = T, nrow = 2, dimnames = list(dinninghall,dinninghall))
+
+mcDining <- new("markovchain", states = dinninghall, byrow = T, 
+                transitionMatrix = diningTransition, name = "Dinning Halls")
+
+mcDining
+```
+
+```{r}
+plot(mcDining)
+```
+
+```{r}
+steadyStates(mcDining)
+```
+
+In the long round, the percentage of students will eat at Grease Ding Hall is 8.54%, at Sweet Dinging Hall is 91.46%.
+
+### 6.2 Modeling Component and System Reliability
+
+#### Page 232: #1
+
+1. Consider a stereo with CD player, FM-AM radio tuner, speakers (dual), and power
+amplifier (PA) components, as displayed with the reliabilities shown in Figure 6.11. Determine the system's reliability. What assumptions are required in your model?
+
+There are three submodels. Assume that stereo with CD player, FM-AM radio tuner are independent so they could form parallel system. Two Speakers are independent and they could form parallel system. Power amplifier (PA) components will affect the whole system if it is out of order so PA and the other two submodels form a series system.  If submodel of CD player and FM-AM radio tuner break, the stereo will not work. Similarly, if submodel of speakers (dual) or power amplifier are out of work, the stero will not give any sound. We assume that the reliability of the two spekers are the equal to each other.
+
+We define the reliabilities of the four components as:
+
+CD player rela=iability: Rc(t), 
+FM-AM radio tuner reliability: Rr(t), 
+SpeakerRs1 reliability:Rs(t), 
+power amplifier reliability: Rp(t).
+
+The combination of series and pararrel systems are:
+
+$Rs(t) = Rs1(t) Rs2(t) Rs3(t) = Rp(t)\times (Rc(t) + Rr(t)-Rc(t)Rr(t))\times (Rs(t) + Rs(t)-Rs(t)Rs(t)) = 0.95*(0.98+0.97-.98*0.97)*(0.99+0.99-0.99*0.99) =  0.95$
+
+So the the system's reliability is 0.95.
+
+
+## Chapter 7. Optimazation of Descrete Models
+
+### 7.1 An Overview of Optimization Modeling
+
+#### Page 251: #2
+
+2. Nutritional Requirements. A rancher has determined that the minimum weekly nutritional requirements for an average-sized horse include 40 lb of protein, 20 lb of carbohydrates, and 45 lb of roughage. These are obtained from the following sources in varying amounts at the prices indicated:
+
+
+```{r,echo=F}
+a<- data.frame(rbind(c( 0.5, 2.0, 5.0, 1.80), c(1.0, 4.0, 2.0, 3.50),c( 2.0, 0.5, 1.0, 0.40), c(6.0, 1.0, 2.5, 1.00),c(40.0, 20.0, 45.0, NA)))
+
+tb_2 <- cbind(c('Hay (per bale)','Oats (per sack)','Feeding blocks (per block)', 'High-protein concentrate (per sack)','Requirements per horse (per week)'),a)
+
+colnames(tb_2) <- c('Food','Protein (lb)', 'Carbohydrates (lb)', 'Roughage (lb)', 'Cost($)')
+
+kable(tb_2)
+
+```
+
+Formulate a mathematical model to determine how to meet the minimum nutritional
+requirements at minimum cost.
+
+**Solution**
+
+Let c1,c2,c3,c4 denote hey, oats,feeding blocks, high-protein concentrate. The objective function is:
+
+Minimum the cost: 1.8 c1 + 3.5c2 + 0.4c3 + c4 
+
+subject to:
+
+0.5c1+c2+2c3+6c4 >= 40
+2c1+4c2+0.5c3+c4 >= 20
+5c1+2c2+c3+2c4 >= 45
+c1,c2,c3,c4 > 0
+
+or 
+
+-0.5c1-c2-2c3-6c4 <= -40
+-2c1-4c2-0.5c3-c4 <= -20
+-5c1-2c2-c3-2c4 <= -45
+c1,c2,c3,c4 > 0
+
+
+```{r}
+suppressMessages(suppressWarnings(library(lpSolveAPI)))
+#make.lp(nrow = 0, ncol = 0, verbose = "neutral")
+
+lpmodel <-make.lp(7,4)
+column <- 0
+#build the model column per column
+for(fd in 1:4){
+  column <- column+1
+  #this takes the arguments 'column','values' & 'indices' (as in where these values should be placed in the column)
+  set.column(lpmodel,column,c(-tb_2[fd,2],-tb_2[fd,3],-tb_2[fd,4]), indices=c(1,2,3))
+}
+
+for(i in 4:7){
+  set.mat(lpmodel, i,i-3,1)
+
+}
+
+lpmodel
+
+#set rhs volume constraints
+set.constr.value(lpmodel, rhs=unlist(tb_2[5,2:4]), constraints=seq(1,3))
+
+#set rhs volume constraints
+set.constr.value(lpmodel, rhs=rep(0,4), constraints=seq(4,7))
+ 
+#set objective coefficients
+set.objfn(lpmodel, tb_2$`Cost($)`[1:4])
+
+lpmodel
+
+```
+
+```{r}
+#set objective direction
+lp.control(lpmodel,sense='min')
+
+#solve the model, if this return 0 an optimal solution is found
+solve(lpmodel)
+
+#this return the proposed solution
+get.objective(lpmodel)
+
+
+```
+
+
+The solution is 0, suggesting more contrains are needed to get meaningful results.
+
+### 7.2. Linear Programing I: Geometric Solution
+
+#### Page 264: #6
+
+Solve Problems 4-7 using graphical analysis.
+
+6. Maximize 10x+35y
+
+subject to
+  
+  8x + 6y <= 48 (board-feet of lumber)
+  
+  4x + y <= 20 (hours of carpentry)
+  
+  y >= 5 (demand)
+  
+  x, y >= 0 (nonnegativity)
+
+```{r}
+# plot constraints
+# first provide dummy data set
+p <- ggplot(data = data.frame(x = 0), mapping = aes(x = x))
+
+#constraints
+fun.1 <- function(x) 8-(8/6)*x
+fun.2 <- function(x) 20-4*x
+fun.3 <- function(x) 5
+fun.4 <- function(x) 0
+
+x<-as.data.frame(seq(0,20,0.05))
+y1<-8-(8/6)*x
+y2<-20-4*x
+
+g1<-data.frame('x'=x,'y1'=y1,'y2'=y2)
+
+#pplot multiple functions
+p + stat_function(fun = fun.1, aes(colour = "fun.1")) +
+  
+  stat_function(fun = fun.2, aes(colour = "fun.2"), size = 1) +
+  stat_function(fun = fun.3, aes(colour = "fun.3"), size = 1) +
+  stat_function(fun = fun.4, aes(colour = "fun.4"), size = 1) +
+  xlim(-7,7)+
+  geom_vline(xintercept = 0) + 
+  geom_hline(yintercept = 0) +
+  geom_text(data = g1, aes(x = 0, y = 20, label = "(0,20)"))+
+  geom_text(data = g1, aes(x = 0, y = 8, label = "(0,8)"))+
+  geom_text(data = g1, aes(x = 2.25, y = 5, label = "(2.25,5)"))+
+  geom_text(data = g1, aes(x = 3.75, y = 5, label = "(3.75,5)"))
+  
+  
+```
+
+Find the intersection points of the constraints
+```{r}
+fun.5<- function(x) 6-(6/8)*x
+point_1 <- uniroot(function(x) fun.5(x),c(-10,1e8),extendInt = 'no')$root
+
+fun.6<- function(x) 5-(1/4)*x
+point_2 <- uniroot(function(x) fun.6(x),c(-10,1e8),extendInt = 'no')$root
+
+point_3 <- uniroot(function(x) fun.1(x)-fun.3(x),c(0,1e8),extendInt = 'no')$root
+point_4 <- uniroot(function(x) fun.2(x)-fun.3(x),c(0,1e8),extendInt = 'no')$root
+
+(int_points <- data.frame('x'=c(0,0,point_3,point_4),'y'=c(point_1,point_2,5,5)))
+
+opti_v <- max(10*int_points$x+35*int_points$y)
+cat('The maximized objective function value is: ',opti_v ) 
+```
+
+
+
