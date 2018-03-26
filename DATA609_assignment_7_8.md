@@ -49,7 +49,7 @@ get.shortest.paths(g1, from=V(g1)[1], to=V(g1)[10], mode = c("all"), weights = e
 
     ## $vpath
     ## $vpath[[1]]
-    ## + 7/10 vertices, named, from 2078b04:
+    ## + 7/10 vertices, named, from cae6457:
     ## [1] a b d g e i j
     ## 
     ## 
@@ -131,11 +131,11 @@ max_flow(g, source=V(g)[1], target=V(g)[4])
     ## [1]  3  6  9 12 15 18 21 24 27
     ## 
     ## $partition1
-    ## + 11/12 vertices, named, from 20992b0:
+    ## + 11/12 vertices, named, from caff738:
     ##  [1] s  x1 y1 y2 y4 y5 x2 y3 y6 x3 x4
     ## 
     ## $partition2
-    ## + 1/12 vertex, named, from 20992b0:
+    ## + 1/12 vertex, named, from caff738:
     ## [1] t
     ## 
     ## $stats
@@ -235,13 +235,9 @@ print(oil,"p","cost","profit")
     ## 11      °--False                NA 550000      NA
 
 ``` r
-plot(oil)
+#plot(oil)
 ```
 
-<!--html_preserve-->
-
-<script type="application/json" data-for="htmlwidget-94fc6b523af54d74699d">{"x":{"diagram":"digraph {\n\n  \"1\" [label = \"oil campany\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"2\" [label = \"geologist_research\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"3\" [label = \"Favorable_report\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"4\" [label = \"True\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"5\" [label = \"False\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"6\" [label = \"Unfavorable_report\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"7\" [label = \"True\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"8\" [label = \"False\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"9\" [label = \"No_geologist_research\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"10\" [label = \"True\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n  \"11\" [label = \"False\", fillcolor = \"#FFFFFF\", fontcolor = \"#000000\"] \n\"1\"->\"2\" [id = \"1\"] \n\"1\"->\"9\" [id = \"2\"] \n\"2\"->\"3\" [id = \"3\"] \n\"2\"->\"6\" [id = \"4\"] \n\"9\"->\"10\" [id = \"5\"] \n\"9\"->\"11\" [id = \"6\"] \n\"3\"->\"4\" [id = \"7\"] \n\"3\"->\"5\" [id = \"8\"] \n\"6\"->\"7\" [id = \"9\"] \n\"6\"->\"8\" [id = \"10\"] \n}","config":{"engine":"dot","options":null}},"evals":[],"jsHooks":[]}</script>
-<!--/html_preserve-->
 ``` r
 (E_pro <- ((0.6*0.85)+(0.4*0.22)+0.45)*6*10^6-10^6*2-10^5)
 ```

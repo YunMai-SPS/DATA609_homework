@@ -173,7 +173,7 @@ print(oil,"p","cost","profit")
 ```
 
 ```{r}
-plot(oil)
+#plot(oil)
 ```
 
 ```{r}
