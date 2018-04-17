@@ -18,6 +18,7 @@ suppressMessages(suppressWarnings(library(dplyr)))
 
 ```
 
+Choose 2 problems from the following list:
 Page 385: #1 a, #1 c
 Page 404: #2 a
 Page 413: #3
@@ -26,18 +27,19 @@ Page 428: #3
 Page 440: #2
 Page 454: #3
     
-    
+Choose 2 problems from the following list:
 Page 469: #3
 Page 478: #6
 Page 481: #1
 Page 522: #21 and #22
 
+# Chapter 10: Game theory
+
+## 10.2 Total Conflict as a Linear Program Model: Pure and Mix strategy
 
 Page 404: #2 a
 
-2. For problems a-g build a linear programming model for each player's decisions and
-solve it both geometrically and algebraically. Assume the row player is maximizing his
-payoffs which are shown in the matrices below.
+2. For problems a-g build a linear programming model for each player's decisions and solve it both geometrically and algebraically. Assume the row player is maximizing his payoffs which are shown in the matrices below 
 
 ```{r,echo-F}
 a <- data.frame('name'=rep('Rose',2),'strategy'=c('R1','R2'),'C1'=c(10,5),'C2'=c(10,0))
@@ -49,11 +51,15 @@ kable(a, "html", align = "c") %>%
 
 ```
 
+**Solution**
+
 Let
 
-A: average payoffs
-x: Portion of the time to play C1 strategy
-1- x: Portion of the time to play C2 strategy
+S: average payoffs
+
+x: Portion of the time to play R1 strategy
+
+1- x: Portion of the time to play R2 strategy
  
 If Colin plays a pure C1 strategy, the expected value is
 
@@ -65,11 +71,497 @@ EV(C2) =  10x
 
 
 The objective expression:
-maximize A
 
-The optimization problem for Rose:
+maximize S
+
+Constraints
+
+S \leq 10x+5(1-x)
+
+S \leq 10x 
+
+0  \leq x  \leq 1
+
+These inequations could be rewritten as follows:
+
+S - 5x <=  5
+
+S - 10x <=0
+
+x <= 1
+
+x >= 0
+
+The constraints coule be write as:
+
+$$
+\begin{equation}
+\begin{bmatrix}
+    1       & -5  \\
+    1       & -10
+\end{bmatrix}
+\begin{bmatrix}
+    S \\
+    x
+\end{bmatrix}
+=
+\begin{bmatrix}
+    5  \\
+    0
+\end{bmatrix}
+\end{equation}
+$$
+let: 
+$$
+\begin{equation}
+{f} = 
+\begin{pmatrix}
+  1   \\
+  0
+  \end{pmatrix}
+\end{equation}
+$$
+and
+$$
+\begin{equation}
+{x} = \begin{pmatrix}
+  S   \\
+  x
+  \end{pmatrix}
+\end{equation}
+$$
+
+The objective function:$max \ f^Tx$
+
+The constraints: Ax <= c  
+
+```{r}
+suppressMessages(suppressWarnings(library(linprog)))  
+
+# form c vector (f in object fucction)
+cvec <- c(1, 0)
+
+# form b vector (c in constraints expression)
+bvec <- c(5,0) 
+
+# form matrix A
+A <- matrix(c(1,1,-5,-10),nrow=2,byrow=F)
+
+res <- solveLP(cvec,bvec,A,maximum=TRUE)
+res 
+```
+
+**The maximum payoffs for the row player is 10.**
+
+Or we can solive the linear programming by the interior point method and graphically
+
+```{r}
+suppressMessages(suppressWarnings(library(intpoint)))
+t <- 1
+c <- t(cvec)
+bm = c(5,0)
+m = A
+interior_point(t, c, bm , m, e = 1e-04, a1 = 1, a2 = 0.97)
+```
+
+** The result is the same: the maximum payoffs for the row player is 10.**
+
+## 10.3 Desition Theory Revisits: Game Theory Against Nature
+
+Page 413: #3
+
+3. We are considering three alternatives A, B, or C or a mix of the three alternatives under uncertain conditions of the economy. The payoff matrix is as follows:
+
+```{r,desion theory, echo-F}
+tbl.2<- data.frame('Alternative'=c('A','B','C'),'No.1'=c(3000,1000,4500),'No.2'=c(4500,9000,4000),'No.3'=c(6000,2000,3500))
+kable(tbl.2, "html", align = "c") %>%
+  kable_styling(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = 1) %>% 
+  add_header_above(c(" ", "Condistions" = 3))
+
+```
+
+Set up and solve both the investor's and the economy's game.
+
+**Solution**
+
+V: Net profit in hundreds of thousands of dollars
+x1: Portion of the time that the investor should play A
+X2: Portion of the time that the investor should play B
+1-x1-x2: Portion of the time that the investor should play C
+
+objective function:
+
+Maximize V
+
+constraints:
+
+$V <= 3000 \times x1+4500\times X2+6000\times (1-X1-X2)  Economy condition A$
+$V <= 1000 \times x1+9000\times X2+2000\times (1-X1-X2)  Economy condition B$
+$V <= 4500 \time sx1+4000\times X2+3500\times (1-X1-X2)  Economy condition C$
+$x1 \leqslant 1$
+$x1 \geqslant 0$
+$x2 \leqslant 1$
+$x2 \geqslant 0$
+
+These inequations could be rewritten as follows:
+
+S - 5x <=  5
+
+S - 10x <=0
+
+x <= 1
+
+x >= 0
+
+The constraints coule be write as:
+
+$$
+\begin{equation}
+\begin{bmatrix}
+    1   & 3000   & 1500  \\
+    1   & -1000   & 7000  \\
+    1   & 1000   & 500
+\end{bmatrix}
+\begin{bmatrix}
+    V \\
+    x1 \\
+    x2
+\end{bmatrix}
+=
+\begin{bmatrix}
+    6000  \\
+    2000  \\
+    3500
+\end{bmatrix}
+\end{equation}
+$$
+let: 
+$$
+\begin{equation}
+{f} = 
+\begin{pmatrix}
+  1   \\
+  0   \\
+  0
+  \end{pmatrix}
+\end{equation}
+$$
+and
+$$
+\begin{equation}
+{x} = \begin{pmatrix}
+  V   \\
+  x1   \\
+  x2
+  \end{pmatrix}
+\end{equation}
+$$
+
+The objective function:$max \ f^Tx$
+
+The constraints: Ax <= c  
+
+```{r}
+#suppressMessages(suppressWarnings(library(linprog)))  
+
+# form c vector (f in object fucction)
+cvec <- c(1, 0,0)
+
+# form b vector (c in constraints expression)
+bvec <- c(6000,2000,3500) 
+
+# form matrix A
+A <- matrix(c(1,1,1,3000,1000,-1000,1500,-7000,-500),nrow=3,byrow=F)
+
+res <- solveLP(cvec,bvec,A,maximum=TRUE)
+res 
+```
+
+The geometric solution:
+```{r}
+suppressMessages(suppressWarnings(library(intpoint)))
+t <- 1
+c <- t(cvec)
+bm = c(6000,2000,3500)
+m = A
+interior_point(t, c, bm , m, e = 1e-04, a1 = 1, a2 = 0.97)
+```
+
+The solution as x1=0.44,x2=0.36,V=$4125, giving the strategy for the investor as 44% A, 36% B and 20% C. Thus, if the investor plays a mixed strategy of 44% A, 36% B and 20% C
+its net profit will be \$4125 regardless of whether the economy is in condition 1,2 or 3 or any mix of the condistions. At this point, theinvestor has a conservative strategy thatguarantees \$4125. 
+
+**Economy's game:**
+
+V: Net profit in hundreds of thousands of dollars
+y1: Portion of the time that the economy in condition No.1
+y2: Portion of the time that the economy in condition No.2
+1-x1-x2: Portion of the time that the economy in condition No.3
+
+objective function:
+
+Maximize V
+
+constraints:
+
+$V <= 3000 \times x1+1000\times X2+4500\times (1-X1-X2)  Economy condition A$
+$V <= 4500 \times x1+9000\times X2+4000\times (1-X1-X2)  Economy condition B$
+$V <= 6000 \time sx1+2000\times X2+3500\times (1-X1-X2)  Economy condition C$
+$y1 \leqslant 1$
+$y1 \geqslant 0$
+$y2 \leqslant 1$
+$y2 \geqslant 0$
+
+These inequations could be rewritten as follows:
+
+S - 5x <=  5
+
+S - 10x <=0
+
+x <= 1
+
+x >= 0
+
+The constraints coule be write as:
+
+$$
+\begin{equation}
+\begin{bmatrix}
+    1   & 1500   & 3500  \\
+    1   & -500   & -5000  \\
+    1   & -2500   & 1500
+\end{bmatrix}
+\begin{bmatrix}
+    V \\
+    x1 \\
+    x2
+\end{bmatrix}
+=
+\begin{bmatrix}
+    4500  \\
+    4000  \\
+    3500
+\end{bmatrix}
+\end{equation}
+$$
+let: 
+$$
+\begin{equation}
+{f} = 
+\begin{pmatrix}
+  1   \\
+  0   \\
+  0
+  \end{pmatrix}
+\end{equation}
+$$
+and
+$$
+\begin{equation}
+{x} = \begin{pmatrix}
+  v   \\
+  x1   \\
+  x2
+  \end{pmatrix}
+\end{equation}
+$$
+
+The objective function:$max \ f^Tx$
+
+The constraints: Ax <= c  
+
+```{r}
+#suppressMessages(suppressWarnings(library(linprog)))  
+
+# form c vector (f in object fucction)
+cvec <- c(1, 0,0)
+
+# form b vector (c in constraints expression)
+bvec <- c(4500,4000,3500) 
+
+# form matrix A
+A <- matrix(c(1,1,1,1500,-500,-2500,3500,-5000,1500),nrow=3,byrow=F)
+
+res <- solveLP(cvec,bvec,A,maximum=TRUE)
+res 
+```
+
+The geometric solution:
+```{r}
+suppressMessages(suppressWarnings(library(intpoint)))
+t <- 0
+c <- t(cvec)
+bm = c(4500,4000,3500)
+m = A
+interior_point(t, c, bm , m, e = 1e-04, a1 = 1, a2 = 0.97)
+```
+
+Thr solution is economy plays 25% condition No.1, 0% condition No.2 and 75% condition No.3. To minimize profit is \$4125. No matter in what economy condition, could limit the investor's profit to \$4125.
+
+## Chapter 11 
+
+### 11.1 Population Growth
+
+Page 469: #3
+
+3. The following data were obtained for the growth of a sheep population introduced into a new environment on the island of Tasmania (adapted from J. Davidson, ``On the Growth of the Sheep Population in Tasmania,'' Trans. R. Soc. S. Australia 62(1938): 342-346).
+
+```{r,population table, echo=F}
+tb3 <- data.frame('t (year)'=c(1814, 1824, 1834, 1844, 1854, 1864),'P(t)' =c(125, 275, 830, 1200, 1750 ,1650))
+kable(t(tb3))
+
+```
+
+a. Make an estimate of M by graphing P(t).
+
+b. Plot lnP=[P/(M-P)]against t . If a logistic curve seems reasonable, estimate rM
+and t*.
+
+**Solution**
+```{r}
+t <- c(1814, 1824, 1834, 1844, 1854, 1864)
+p <- c(125, 275, 830, 1200, 1750, 1650)
+
+ggplot(data.frame(x=t,y=p),aes(x=x,y=y, fill = p)) + 
+  geom_line() +
+  geom_point() + 
+  ggtitle("Sheep Population Growth") + 
+  theme(plot.title = element_text(lineheight=.8, face="bold"))+
+  xlab("Years")+
+  ylab("Population")
+
+```
+
+
+The sheep population appears to reach a maximum level, and the last data point suggests that the data never exceeded 1750. I estimate M = 1750.
+
+Then plot Years elapsed and Change p(t+1) - p(t)
+
+```{r}
+yearlapsed<- t-t[1]
+p_changes<-0
+for (i in 1:length(p)-1) {
+  p_changes<- c(p_changes, p[i+1] -p[i]) 
+  }
+p_changes
+yearlapsed
+
+ggplot(data.frame(x=yearlapsed,y=p_changes),aes(x=x,y=y, fill = p_changes)) + 
+  geom_line() +
+  geom_point() + 
+  ggtitle("Sheep Population Growth Change") + 
+  theme(plot.title = element_text(lineheight=.8, face="bold"))+
+  xlab("Elapsed Years")+
+  ylab("Growth Change")
+
+```
+
+The plot suggests that the logistic curve is reasonable. Then estimate rM and t???.
+
+```{r}
+M <- 1800
+
+#ln [P/ M - P]
+ln_pMp <- log(p/(M-p))
+
+suppressMessages(suppressWarnings(library(Laurae)))
+
+# plot ln [P/ M - P] versus t
+ggplot(data.frame(x=t,y=ln_pMp),aes(x=x,y=y, fill = ln_pMp)) + 
+  geom_line() +
+  geom_point() + 
+  stat_smooth(method="lm")+
+  stat_smooth_func(geom="text",method="lm",hjust=0,parse=TRUE)+
+  ggtitle("ln [P/ M - P] versus t") + 
+  theme(plot.title = element_text(lineheight=.8, face="bold"))+
+  xlab("Years (t)")+
+  ylab("ln [P/ M - P]")
+
+```
+
+
+The above graph does approximate to a straight line. Thus we accept the assumptions of logistic growth for the sheep population. rM = 0.119.
+
+Then estimate the slope (rM) of the graph.
+```{r}
+rM <- lm(ln_pMp ~ t)
+(rM <- rM$coefficients["t"])
+```
+
+Then estimate t* with the fomula as follows:
+
+$t*=t_0 -\frac{1}{rM}+\frac{P_0}{M-P_0}$
+
+```{r}
+(t_star <- t[1] - (1/rM)*log(p[1]/(M-p[1])))
+```
+
+$P(t)= \frac{M}{1+e^{-rM(t-t*)}}$
+
+```{r}
+#p_t <- M/(1+exp(rM*t_star)*exp(-rM*t))
+exp(rM*t_star)
+```
+
+$P(t)= \frac{1800}{1+6.433129^94 \times e^{(0.1189136 \times t)}}$
+
+Let validate:
+
+```{r}
+t1 <- 1814
+(p_t1 <- M/(1+exp(rM*t_star)*exp(-rM*t1)))
+t2 <- 1824
+(p_t2 <- M/(1+exp(rM*t_star)*exp(-rM*t2)))
+t3 <- 1836
+(p_t3 <- M/(1+exp(rM*t_star)*exp(-rM*t3)))
+
+```
+
+when t = 1814, p = 125 which is the same to the real data. 
+
+when t = 1824,p = 355 which i higher than the real population 275.
+
+when t = t* = 1835.825  = 1836, p = 910 which is close to p = M/2 = 1800/2= 900. 
+
+In general, the logistical model roughly agrees with the population.
 
 
 ```{r}
-
+(t_star <- t[1] - (1/rM)*log(p[1]/(M-p[1])))
 ```
+
+### 11.7 Linear Equations
+
+Page 522: #21
+ 
+21. Oxygen flows through one tube into a liter flask falled with air, and the mixture of oxygen and air (considered well stirred) escapes through another tube. Assuming that
+air contains 21% oxygen, what percentage of oxygen will the flask contain after 5 L
+have passed through the intake tube?
+
+**Solution**
+
+the problem is 'proportion of oxygen' vs 'volume passed through'.
+
+If P(v) is the proportion of Oxygen when a volume v has passed through, then the initial condition is when v=0, P=0.21.
+
+The differential equation would be: dP = dv - dPv x 1, therefore, dP/dv = 1-P, when if an extra dv of oxygen pass into the flask, then an amount dPv comes out. 
+
+The Deferential Equation: dP/dv = 1-P.
+
+The initial condition is: P(0) = 0.21
+
+```{r}
+derivs <- function( r,y, parms)
+  list(r-y)
+
+suppressMessages(suppressWarnings(library(deSolve)))
+
+yini <- 0.21
+volums <- seq(from = 0, to = 5, by = 0.2)
+(out <- ode(y = yini, times = volums, func = derivs, parms = NULL))
+```
+
+Therefore, the precentage of oxygen that flask will contain after 5 L is 4.0081531 Liters. 
+ 
+ 
