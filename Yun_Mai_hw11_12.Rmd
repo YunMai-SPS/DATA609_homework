@@ -9,18 +9,25 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+Options:
 Homework 6.1 (select 2 questions from below list, due next week):
 
 Page 529: #1, #6
+
 Page 536: #7
+
 Page 546: #1
+
 Page 566: #1
     
 Homework 6.2 (select 2 questions from below list, due this week):
 
 Page 576: #2
+
 Page 585: #2
+
 Page 591: #5
+
 Page 599: #5
 
 ## Chapter 12 Modeling With System of Different Equations
@@ -93,13 +100,13 @@ So
 
 $a_1^2 < 4a_2$
 
-So $r_1 and r_2 $ have Complex Roots & $r_1 \neq r_2$ 
+So $r_1 and r_2$ have Complex Roots & $r_1 \neq r_2$ 
 
 $r_1,r_2 = \pm i$ 
 
 In the case when$ r_1 and r_2$ have complex Roots &$r_1 \neq r_2$, if the real part of roots h < 0, the steady state is stable. But now h = 0, so the steady state is unstable. In the other word, The rest point is unstable.
 
-
+###12.2 Competitive Hunter Model
 
 Page 536: #7
 
@@ -107,7 +114,24 @@ Page 536: #7
 
 a. From system (12.6) derive the following equation:
 
+$\frac{dy}{dx}=\frac{(m-nx)y}{(a-by)x}$
+
+**Prove:**
+
+system (12.6) 
+
+$\frac{dx}{dt}=(a-by)x$
+
+$\frac{dy}{dt}=(m-nx)y$
+
+According to the chain rule, we have
+
+$\frac{dy}{dx}\frac{dx}{dt}=\frac{dy}{dt}$
+
+$\frac{dx}{dy}(a-by)x=(m-nx)y$
+
 $\frac{dx}{dy}=\frac{(m-nx)y}{(a-by)x}$
+
 
 b. Separate variables, integrate, and exponentiate to obtain
 
@@ -115,13 +139,130 @@ $y^ae^{-by}=Kx^me^{-nx}$
 
 where K is a constant of integration.
 
+**Solution:**
+
+Separate the variables and write
+
+$\frac{(a-by)}{y}dy=\frac{(m-nx)}{x}dx$
+
+$a\times ln|y|-by + C_1 = m\times ln|x|-nx + C_2 $
+
+$a\times ln|y|-by  = m\times ln|x|-nx + C_2 - C_1$
+
+Applying the natural logarithm to each side:
+
+$e^{a\times ln|y|-by}=e^{m\times ln|x|-nx} \times e^{C_2 - C_1}$
+
+$e^{ln|y|^a-by}=e^{ln|x|^m-nx} \times e^{C_2 - C_1}$
+
+Let
+
+$K= e^{C_2 - C_1}$
+
+Then
+
+$y^ae^{-by}=Kx^me^{-nx}$
+
+
 c. Let $f(y)= y^a/e^{by}$ . Show that f(y) has a unique maximum of
-$M_y = (a/eb)^a $ when y = a/b as shown in Figure 12.12. Similarly, show that g(x)
-has a unique maximum $M_x = (x/en)^m $ when x= m/n, also shown in Figure 12.12.
+$M_y = (a/eb)^a$ when y = a/b as shown in Figure 12.12. Similarly, show that g(x)
+has a unique maximum $M_x = (x/en)^m$ when x= m/n, also shown in Figure 12.12.
+
+**Prove:**
+
+When 
+
+$f'(y)=ay^{a-1}e^{-by}+y^ae^{-by}(-b)= 0$
+
+y reach M_y.
+
+From the above equation, we have
+
+$y=a/b$
+
+$M_y=y^a/e^{by}=(a/b)^a/e^{b\frac{a}{b}}$
+
+$M_y = (a/eb)^a$
+
+
+Similarly, when 
+
+$g'(x)=my^{m-1}e^{-ny}+y^me^{-ny}(-n)= 0$
+
+x reach M_x.
+
+From the above equation, we have
+
+$x=m/n$
+
+$M_y=y^a/e^{by}=(a/b)^a/e^{b\frac{a}{b}}$
+
+$M_x = (x/en)^m$
+
+## Chapter 13 Optimization of Continuous Models
+
+###13.1 An Inventory Problem: Minimizing the Cost of Delivery and Storage
+
+Page 576: #2
+
+2. Consider a company that allows back ordering. That is, the company notifies customers that a temporary stock-out exists and that their order will be filled shortly. What conditions might argue for such a policy? What effect does such a policy have on storage costs? Should costs be assigned to stock-outs? Why? How would you make such an assignment? What assumptions are implied by the model in Figure 13.7? Suppose a "loss of goodwill cost" of w dollars per unit per day is assigned to each stock-out. Compute the optimal order quantity Q* and interpret your model.
 
 **Solution:**
+
+When the demand higher than offer might argue for such a policy because back ordering will decrease the revenue.  Such a policy can reduce storage costs. But costs should also be assigned to stock-outs because the sales may decrease when the commodity is out of stock. The decrease of sales because of stock-outs will be assigned to cost. 
+
+The following notation are used for constructing the model:
+
+s = storage costs per item per day
+
+d = handling and delivery cost in dollars per sale
+
+l = loss of goodwill cost
+
+r = demand rate of the item per day
+
+Q = quantity of the orders
+
+T = time in days
+
+Assuming Q = q, is sold at time T = 0, and the item is sold out after T = t days. l = w dollars per unit per day. The same cycle is then repeated, as illustrated in Figure 13.7.
+
+Average daily inventory is q/2
+
+cost per cycle: $d+s\frac{q}{2} t+w$
+
+which, upon division by t , yields the average daily cost:
+
+$c = \frac{d+w}{t}+s\frac{q}{2}$
+
+For a single cyclic period, the amount delivered equals the amount demanded. So q = rt. Subtitution yield
+
+$c = \frac{d}{t}+s\frac{rt}{2}$
+
+to find the crytical point
+
+$c'=  =-(d+w)/t^2 + sr/2 = 0$
+
+$T* = \sqrt{\frac{2(d+w)}{sr}}$
+
+This critical point provides a relative minimum for the cost function because the second
+derivative
+
+$c'' = -2(d+w)/t^3$
+
+is always ngative. So we have maximum q=Q* at this point. 
+
+Let's find the order quantity Q* that minimizes the average daily cost. Differentiating c with respect to t and setting c0 D 0 yields
+
+
+###13.2 Methods to Optimize Functions of Several Variables
+
+
+
+Page 585: #2
 
 
 ***Reference:***
 1. Simultaneous Systems of Differential Equations (http://web.uvic.ca/~kumara/econ351/)
+
 2. Linear, Second-Order Differential Equations (http://web.uvic.ca/~kumara/econ351/schap23.pdf)
