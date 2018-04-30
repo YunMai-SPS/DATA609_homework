@@ -1,0 +1,127 @@
+---
+title: "YunMai_DATA609_hw_11_12"
+author: "Yun Mai"
+date: "April 26, 2018"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Homework 6.1 (select 2 questions from below list, due next week):
+
+Page 529: #1, #6
+Page 536: #7
+Page 546: #1
+Page 566: #1
+    
+Homework 6.2 (select 2 questions from below list, due this week):
+
+Page 576: #2
+Page 585: #2
+Page 591: #5
+Page 599: #5
+
+## Chapter 12 Modeling With System of Different Equations
+
+
+### 12.1 Graphical Solutions of the Autonomous System of First-order Differential
+
+Page 529: #1, #6
+
+In Problems 1-4, verify that the given function pair is a solution to the first-order system.
+
+1.$x = -e^{t}$  $y = e^{t}$
+
+$\frac{dy}{dt}=x$ $\frac{dx}{dt}=y$
+
+**Prove:**
+
+Differentiation of x gives us:
+
+$x' = -e^{t} = y$ 
+
+Differentiation of y gives us:
+
+$y' = e^{t} = x$ 
+
+So
+$x = -e^{t}$ and $y = e^{t}$ is the solution to the first-order system $\frac{dy}{dt}=x$ $\frac{dx}{dt}=y$
+
+In Problems 5-8, find and classify the rest points of the given autonomous system.
+
+6. $\frac{dx}{dt}=-(y-1)$ $\frac{dy}{dt}= x-2$
+
+**Solution:**
+
+If simultaneously $\frac{dx}{dt}=-(y-1) = 0$ and $\frac{dy}{dt}= x-2 = 0$. Thus (x= 2, y=1), is the rest point of the system.
+
+Use the Substitution Method to find the solution for the first-order syste.
+
+$x'=1-y, x''=-y'= -x+2$ $x''+x=2$ 
+
+$y'=x-2, y''=-x'= 1-y$  $y''+y=1$ 
+
+$x'=a_{11}x+a_{12}y+b_1, a_{11}= 0, a_{12}=-1,b_1=1$ 
+
+$x'=a_{21}x+a_{22}y+b_2, a_{11}= 1, a_{12}=0,b_2=-2$ 
+
+Solve the homogeneous part:
+
+$x^h(t)=c_1e^{r_1t}+c_2e^{r_2t}$ 
+
+$y^h(t)=-r_1c_1e^{r_1t}-r_2c_2e^{r_2t}$ 
+
+Solve the steady-state part:
+
+$\overline{x}=\frac{a_{12}b_2 - a_{22}b_1}{a_{11}a_{22} - a_{12}a_{21}}$
+
+$\overline{x}= \frac{(-1)\times(-2)-0}{-(-1)\times 1} = 2$
+
+$\overline{y}=\frac{a_{21}b_2 - a_{11}b_1}{a_{11}a_{22} - a_{12}a_{21}}$
+
+$\overline{y}=\frac{1\times 1-0}{0-(-1)\times 1} = 1$
+
+If $x''+a_1x-2=0$, r_1,r_2 could be expressed as:
+
+$r_1,r_2 = \frac{- a_1 \pm \sqrt{a_1^2-4a_2}}{2}$ 
+
+$a_1^2 =0, 4a_2=4$ 
+
+So 
+
+$a_1^2 < 4a_2$
+
+So $r_1 and r_2 $ have Complex Roots & $r_1 \neq r_2$ 
+
+$r_1,r_2 = \pm i$ 
+
+In the case when$ r_1 and r_2$ have complex Roots &$r_1 \neq r_2$, if the real part of roots h < 0, the steady state is stable. But now h = 0, so the steady state is unstable. In the other word, The rest point is unstable.
+
+
+
+Page 536: #7
+
+7. Show that the two trajectories leading to (m=n, a=b/ shown in Figure 12.8 are unique.
+
+a. From system (12.6) derive the following equation:
+
+$\frac{dx}{dy}=\frac{(m-nx)y}{(a-by)x}$
+
+b. Separate variables, integrate, and exponentiate to obtain
+
+$y^ae^{-by}=Kx^me^{-nx}$
+
+where K is a constant of integration.
+
+c. Let $f(y)= y^a/e^{by}$ . Show that f(y) has a unique maximum of
+$M_y = (a/eb)^a $ when y = a/b as shown in Figure 12.12. Similarly, show that g(x)
+has a unique maximum $M_x = (x/en)^m $ when x= m/n, also shown in Figure 12.12.
+
+**Solution:**
+
+
+***Reference:***
+1. Simultaneous Systems of Differential Equations (http://web.uvic.ca/~kumara/econ351/)
+2. Linear, Second-Order Differential Equations (http://web.uvic.ca/~kumara/econ351/schap23.pdf)
