@@ -3,7 +3,9 @@ YunMai\_DATA609\_hw\_11\_12
 Yun Mai
 April 26, 2018
 
-Options: Homework 6.1 (select 2 questions from below list, due next week):
+Options:
+
+Homework 6.1 (select 2 questions from below list, due next week):
 
 Page 529: \#1, \#6
 
@@ -199,15 +201,17 @@ Page 576: \#2
 
 **Solution:**
 
-When the demand higher than offer might argue for such a policy because back ordering will decrease the revenue. Such a policy can reduce storage costs. But costs should also be assigned to stock-outs because the sales may decrease when the commodity is out of stock. The decrease of sales because of stock-outs will be assigned to cost.
+When the demand higer than offer, the company may use back ordering policy to retain the customers.Such a policy can reduce storage costs. But costs should also be assigned to stock-outs because the sales or revenue within a certain period of time will decrease when the commodity is out of stock. In addition, the stock-out may make the custormers irate or disappointed thus causes the cost of lost of future profit from customers or loss of goodwill.
 
-The following notation are used for constructing the model:
+The following notations are assigned to the cost of stock-outs:
 
 s = storage costs per item per day
 
-d = handling and delivery cost in dollars per sale
+w = loss of goodwill cost per day
 
-l = loss of goodwill cost
+Some other notations are used for constructing the model:
+
+h = handling fee in dollars per sale
 
 r = demand rate of the item per day
 
@@ -219,33 +223,43 @@ Assuming Q = q, is sold at time T = 0, and the item is sold out after T = t days
 
 Average daily inventory is q/2
 
-cost per cycle: $d+s\\frac{q}{2} t+w$
+cost per cycle: $h+s\\frac{q}{2} t+w\\frac{(-q)}{2}t$
 
 which, upon division by t , yields the average daily cost:
 
-$c = \\frac{d+w}{t}+s\\frac{q}{2}$
+$c = \\frac{h}{t}+ s\\frac{q}{2}+w\\frac{(-q)}{2}$
 
-For a single cyclic period, the amount delivered equals the amount demanded. So q = rt. Subtitution yield
+For a single cyclic period, the amount sold equals the amount demanded. So q = rt. Subtitution yield
 
-$c = \\frac{d}{t}+s\\frac{rt}{2}$
+$c = \\frac{h}{t}+ s\\frac{rt}{2}+w\\frac{(-rt)}{2}$
 
 to find the crytical point
 
-*c*′= = −(*d* + *w*)/*t*<sup>2</sup> + *s**r*/2 = 0
+$c'= = \\frac{h}{t^2}+ \\frac{sr}{2}-\\frac{wr}{2}= 0$
 
-$T\* = \\sqrt{\\frac{2(d+w)}{sr}}$
+$T\* = \\sqrt{\\frac{2h}{(s-w)r}}$
 
-This critical point provides a relative minimum for the cost function because the second derivative
+$c''= 2\\frac{h}{t^3}$ is always positive. So at the crytical point, we can have the minimum cost.
 
-*c*″= − 2(*d* + *w*)/*t*<sup>3</sup>
+The optimal order quantity $Q\*=rT\*=r\\sqrt{\\frac{2h}{(s-w)r}}=\\sqrt{\\frac{2rh}{s-w}}$
 
-is always ngative. So we have maximum q=Q\* at this point.
-
-Let's find the order quantity Q\* that minimizes the average daily cost. Differentiating c with respect to t and setting c0 D 0 yields
+When the order quantity is $\\sqrt{\\frac{2rh}{s-w}}$, we can have control the cost at lowest level and maximize the profit.
 
 ### 13.2 Methods to Optimize Functions of Several Variables
 
 Page 585: \#2
+
+1.  Find the local minimum value of the function
+
+*f*(*x*, *y*)=3*x*<sup>2</sup> + 6*x**y* + 7*y*<sup>2</sup> − 2*x* + 4*y*
+
+**Solution:**
+
+$\\frac{\\partial f(x,y)}{\\partial x} = 6x + 6y -2 =0$
+
+$\\frac{\\partial f(x,y)}{\\partial y} = 6x14y +4=0$
+
+x=13/12, y=-3/4
 
 ***Reference:*** 1. Simultaneous Systems of Differential Equations (<http://web.uvic.ca/~kumara/econ351/>)
 
