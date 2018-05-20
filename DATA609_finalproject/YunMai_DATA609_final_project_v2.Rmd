@@ -1,0 +1,713 @@
+---
+title: "DATA609_finalproject_v2"
+author: "Yun Mai"
+date: "May 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressMessages(suppressWarnings(library(knitr)))
+suppressMessages(suppressWarnings(library(ggplot2)))
+suppressMessages(suppressWarnings(library(ggthemes)))
+suppressMessages(suppressWarnings(library(dplyr)))
+suppressMessages(suppressWarnings(library(tidyr)))
+suppressMessages(suppressWarnings(library(stringr)))
+suppressMessages(suppressWarnings(library(lpSolveAPI)))
+
+```
+
+##1. Data
+
+Get the historical price of these ETF nad USDOLLAR from Yahoo Finace and Investing.com.
+
+```{r}
+close_price<-read.csv("https://raw.githubusercontent.com/YunMai-SPS/DATA609_homework/master/DATA609_finalproject/close_price.csv")
+close_price<-close_price[,-1]
+close_price[,1] <- as.Date(close_price[,1])
+```
+
+### 1.1 Explore the data
+
+```{r}
+stock_info <- read.csv("https://raw.githubusercontent.com/YunMai-SPS/DATA609_homework/master/DATA609_finalproject/list_of_asset.txt")
+kable(stock_info[,c(1,3)])
+```
+
+
+## 1.2 Select the stock with good return 
+
+```{r}
+#daily return
+daily_return <- as.data.frame(apply(close_price[,-1] , 2 , diff )/close_price[-1259,-1])
+daily_return <- cbind(Date = close_price[-1,1],daily_return)
+
+#monthly returns
+temp <-  lapply(daily_return[,-1], function(x) x+1)
+temp$year <- format(daily_return[,1], "%Y")
+temp$month <- format(daily_return[,1], "%m")
+temp<- as.data.frame(temp)
+monthly_return <- aggregate(temp[-c(54,55)] ,by=list(temp$month,temp$year), FUN = prod, na.rm=TRUE)
+monthly_return <-cbind(monthly_return[,c(1,2)],monthly_return[,-c(1,2)]-1)
+colnames(monthly_return)[1] <-'Month'
+colnames(monthly_return)[2] <-'Year'
+monthly_return$Date <- as.Date(paste0(monthly_return$Year,'-',monthly_return$Month,"-01"))
+monthly_return <- monthly_return[,c(56,1:55)]
+
+#yearly returns
+annual_return <- aggregate(temp[-c(54,55)] ,list(temp$year), FUN = prod, na.rm=TRUE)
+annual_return <-cbind(annual_return[,1],annual_return[,-1]-1)
+colnames(annual_return)[1] <-'Year'
+#$Year <- as.Date(ISOdate(plot_dt_Y$Year, 1, 1))
+
+# time period: year
+n <- tail(as.numeric(annual_return$Year), n=1) - as.numeric(as.numeric(annual_return$Year))[1]
+
+# 5 years average annual return
+ave_annual_return <- apply(annual_return[,-1]+1,2,prod)
+ave_annual_return <- ave_annual_return^(1/n)-1
+
+```
+
+We don't want to invest on all of these 52 ETF, so pick the ETF with average annual return greater than 10%. 12 ETF have been selected.
+
+```{r}
+high_return_fiveyear <- as.data.frame(ave_annual_return[ave_annual_return>0.12])
+colnames(high_return_fiveyear)<-'ave_yearly_return'
+candidate <- names(ave_annual_return[ave_annual_return>0.12])
+kable(high_return_fiveyear)
+candidate
+```
+
+```{r}
+# Generated palette with rich rainbow and dark (12, s = 0.6, v = 0.75)
+mixcolor <- c("#1B9E77", "#FF3300", "#5e1ea6", "#FEEA02", "#7570B3", "#A6761D", "#D95F02", "#E6AB02", "#E7298A",  "#000040", "#000093", "#0d4701", "#0076FF", "#0ff4ff",  "#49FB25",   "#eeff24","#ff24ef","#666666")
+
+ggplot(close_price[,names(close_price) %in% c('Date',candidate)], aes(x = Date)) +
+  geom_line(aes(y = close_price[,2],color= candidate[1]))+
+  geom_line(aes(y = close_price[,3],color= candidate[2]))+
+  geom_line(aes(y = close_price[,4],color= candidate[3]))+
+  geom_line(aes(y = close_price[,5],color= candidate[4]))+
+  geom_line(aes(y = close_price[,6],color= candidate[5]))+
+  geom_line(aes(y = close_price[,7],color= candidate[6]))+
+  geom_line(aes(y = close_price[,8],color= candidate[7]))+
+  geom_line(aes(y = close_price[,9],color= candidate[8]))+
+  geom_line(aes(y = close_price[,10],color= candidate[10]))+
+  geom_line(aes(y = close_price[,11],color= candidate[11]))+
+  geom_line(aes(y = close_price[,12],color= candidate[12]))+
+  theme_few()+
+  scale_color_manual(values = mixcolor)+
+  ylab('Adjusted Close Price')+
+  labs(title="Adjusted Close Price")
+
+#The subset of the data as candidate
+sub_return_1 <- monthly_return[,c('Date','Month','Year',candidate)]
+plot_dt <- sub_return_1[,c(1,4:15)] %>% gather(symbol, return,2:13)   
+ggplot(plot_dt, aes(x = Date, y = return,color= symbol)) +
+  geom_line() +
+  theme_few()+
+  labs(title="Adjusted Monthly Returns")+
+  facet_wrap( ~ symbol)+
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+ggplot(plot_dt, aes(x = Date, y = return)) +
+  geom_line() +
+  theme_few()+
+  labs(title="Adjusted Monthly Returns")
+  
+```
+
+## 3.Mean Variance model
+
+Suppose data are observed for N securities, over T time periods. Let
+
+$y_{jt}$ = Return on one dollar invested in security j in time period t.
+
+$\bar{y_j}$=Average Return on security j
+
+$w_j=$ Portfolio allocation to security j.
+
+$y_{pt}$ = Return on portfolio in time period t
+
+$E_p$ =Average Return on portfolio
+
+$M_p$ = Minimum return on portfolio
+
+The objective function: $$min \displaystyle\sum_{j=k}^{N}\displaystyle\sum_{j=1}^{N}w_jw_ks_{jk}$$
+
+subject to: $$\displaystyle\sum_{j=1}^{N}w_j\bar{y_j} \geq G $$  
+
+with: $$s_{jk} = \frac{1}{T-N}\displaystyle\sum_{t=1}^{T}(y_{jt} - \bar{y_j})(y_{kt} -\bar{y_k})$$
+
+```{r}
+
+library(rmarkdown)
+
+#pandoc_version()
+```
+
+
+```{r}
+#The subset of the data as candidate
+sub_return <- monthly_return[,c('Date','Month','Year',candidate)]
+
+# convert to matrix and vector for later use
+cov_matrix <- cov(sub_return[sub_return$Date > as.Date('2017-04-01'),][,-c(1:3)])
+
+pstart <- rep(1/12,11)
+
+# arithmetic mean of monthly return
+mu <- apply(sub_return[sub_return$Date > as.Date('2017-04-01'),][,-c(1:3)],2,mean)
+
+# standard deviation
+std <- apply(sub_return[sub_return$Date > as.Date('2017-04-01'),][,-c(1:3)],2,sd)
+
+#sharp ratio
+sharpe <- mu /std
+
+############################################
+#Minimize the variance
+############################################
+SSRE  <- function(parx) {
+    par<- c(parx,1-sum(parx))
+    if(all(par > 0 & par < 1)) { # parameters meet requirements
+       sqrt(t(par)%*% cov_matrix%*% par) # this is a  linear algebra version of your objective without  the division by xi
+    } else 1e7  # penalty for parameters not satisfying constraints
+}
+
+SSRE(pstart)
+
+#par<- c(pstart,1-sum(pstart))
+#vr <- sqrt(t(par)%*% cov_matrix%*% par)
+
+opt_1 <- optim(pstart,SSRE)
+opt_1
+
+para <- c(opt_1$par, 1-sum(opt_1$par))  # final contributions
+
+weight<- as.data.frame(t(round(para,4)))
+colnames(weight)<- candidate
+display <- cbind(t(weight),'Ave.Return'=mu,'Stdev'=std,'Sharp'=sharpe)
+colnames(display)[1]<-'Weight'
+data.frame(display)
+
+
+cat('\n','The monthly return of the portfolio at the minimum global variance is:',max_value <-sprintf("%1.3f%%", para%*%mu*100),'\n')
+
+cat('\n','The minimum global variance is:',min_vr <-opt_1$value,'\n')
+
+
+#or
+#opt_1 <-nlminb(pstart, SSRE) 
+
+############################################
+#Maximize the return
+############################################
+MaxReturn  <- function(parx) {
+    par<- c(parx,1-sum(parx))
+    if(all(par > 0 & par < 1)) { # parameters meet requirements
+       -t(par)%*%mu  # this is a  linear algebra version of your objective without  the division by xi
+
+    } else 1e7  # penalty for parameters not satisfying constraints
+}
+
+-MaxReturn (pstart)
+
+opt_2 <-nlminb(pstart, MaxReturn) 
+opt_2
+
+para_2 <- c(opt_2$par, 1-sum(opt_2$par))  # final contributions
+
+weight<- as.data.frame(t(round(para_2,4)))
+colnames(weight)<- candidate
+data.frame('Weight'=t(weight))
+
+cat('\n','The maximized monthly return of the portfolio is:',max_value <-sprintf("%1.3f%%", -opt_2$objective*100),'\n')
+
+cat('\n','The global variance is:',vr_mxreturn <- sqrt(t(para_2)%*%cov_matrix%*%para_2),'\n')
+```
+
+
+## 4.Minimax Model
+
+Suppose data are observed for N securities, over T time periods. Let
+
+$y_{jt}$ = Return on one dollar invested in security j in time period t.
+
+$\bar{y_j}$=Average Return on security j
+
+$w_j=$ Portfolio allocation to security j.
+
+$y_{pt}$ = Return on portfolio in time period t
+
+$E_p$ =Average Return on portfolio
+
+$M_p$ = Minimum return on portfolio
+
+The objective function:
+
+$$max\ M_p$$
+
+subject to:
+
+$$\displaystyle\sum_{j=1}^{N}w_jy_{jt} \geq M_p $$   t = 1,...,T
+
+$$\displaystyle\sum_{j=1}^{N}w_j\bar{y_j} \geq G $$
+
+
+```{r}
+#the worst monthly return was calculated by subtract average return by the standard deviation
+worst_return<-mu-std
+
+#The subset of the data as candidate
+sub_return <- monthly_return[,c('Date','Month','Year',candidate)]
+
+# convert to matrix and vector for later use
+cov_matrix <- cov(sub_return[sub_return$Date > as.Date('2017-04-01'),][,-c(1:3)])
+
+pstart <- rep(1/12,11)
+
+# arithmetic mean of monthly return
+mu <- apply(sub_return[sub_return$Date > as.Date('2017-04-01'),][,-c(1:3)],2,mean)
+
+# standard deviation
+std <- apply(sub_return[sub_return$Date > as.Date('2017-04-01'),][,-c(1:3)],2,sd)
+
+#sharp ratio
+sharpe <- mu /std
+
+worst_return <- mu-std
+
+############################################
+#Minimize the variance
+############################################
+portfolio_return  <- function(parx) {
+    par<- c(parx,1-sum(parx))
+    if(all(par > 0 & par < 1)) { # parameters meet requirements
+       -par%*%worst_return # this is a  linear algebra version of your objective without  the division by xi
+    } else 1e7  # penalty for parameters not satisfying constraints
+}
+
+portfolio_return(pstart)
+
+opt_3 <- optim(pstart, portfolio_return) 
+opt_3
+
+para_3 <- c(opt_3$par, 1-sum(opt_3$par))  # final contributions
+
+weight<- as.data.frame(t(round(para_3,4)))
+colnames(weight)<- candidate
+display <- cbind(t(weight),'Worst.Return'=worst_return,'Ave.Return'=mu,'Stdev'=std,'Sharp'=sharpe)
+colnames(display)[1]<-'Weight'
+data.frame(display)
+
+cat('\n','The average minimum losses is:',min_losses <-sprintf("%1.3f%%", opt_3$value*100,'\n'))
+
+cat('\n','The variance is:',SSRE(para_3[-12]))
+
+alocation <- rbind('worst_return'=worst_return,'weight'=weight)
+colnames(alocation) <- candidate
+kable(alocation)
+
+#dt_plot<- data.frame(t(rbind(seq(1,12,1),alocation)))
+#ggplot(dt_plot,aes(x=X1))+
+  #geom_line(y=dt_plot$worst_return,colour ='red')+
+  #geom_line(y=dt_plot$weight,colour ='green')+
+  #theme_few() 
+
+```
+
+
+```{r}
+MV = para * mu 
+MiniMax = para_3 * mu 
+para_4 <- rep(1/12,12)
+Even = para_4* mu 
+
+compare <- cbind(candidate,MV,MiniMax,Even)
+
+m <- as.matrix(sub_return[sub_return$Date > as.Date('2017-04-01'),][,-c(1:3)])
+matrix_1 <- matrix(rep(para,13),nrow=12) * t(m)
+tb_1 <- as.data.frame(cbind('Date'=sub_return[sub_return$Date > as.Date('2017-04-01'),][,'Date'],t(matrix_1)))
+tb_1$Date <- as.Date(tb_1$Date, origin = "1966-01-01") 
+
+matrix_2 <- matrix(rep(para_3,13),nrow=12) * t(m)
+tb_2 <- as.data.frame(cbind('Date'=sub_return[sub_return$Date > as.Date('2017-04-01'),][,'Date'],t(matrix_2)))
+tb_2$Date <- as.Date(tb_2$Date, origin = "1966-01-01") 
+
+matrix_3 <- matrix(rep(para_4,13),nrow=12) * t(m)
+tb_3 <- as.data.frame(cbind('Date'=sub_return[sub_return$Date > as.Date('2017-04-01'),][,'Date'],t(matrix_3)))
+tb_3$Date <- as.Date(tb_3$Date, origin = "1966-01-01") 
+
+compare<-as.data.frame(cbind(tb_1[,c('Date','VTI','XLK')],tb_2[,c('VTI','XLK')],tb_3[,c('VTI','XLK')]))
+colnames(compare) <-c('Date','MV.VTI','MV.XLK','Min.VTI','Min.XLK','Even.VTI','Even.XLK')
+
+plot_compare <- compare[,c(1,2,4,6)] %>% gather(method,ave_return,2:4)
+par(mfrow=c(1,2))
+ggplot(plot_compare,aes(x = Date,y = ave_return,colour=method))+
+  geom_line()+
+  ylab('Return on Poetfolio')+
+  labs(title="Compare the optimized return of VTI")+
+  theme_few()+
+  scale_color_manual(values = mixcolor)
+
+ggplot(compare,aes(x=Date))+  
+  geom_line(aes(y=MV.XLK,color = 'MV.XLK'))+
+  geom_line(aes(y=Min.XLK,color = 'Min.XLK'))+
+  geom_line(aes(y=Even.XLK,color = 'Even.XLK'))+
+  theme_few()+
+  scale_color_manual(values = mixcolor)+
+  ylab('Return on Poetfolio')+
+  labs(title="Compare the optimized return on XLK")
+
+```
+
+## 5. Game theory model: Maximin Model
+
+```{r}
+worst_return <- mu-std
+average_return <- mu
+best_return <- mu+std
+game <- data.frame(cbind('worst' = worst_return,'average' = average_return,'best'= best_return))
+game
+w <- c(paste0('y',seq(1,12)))
+  
+paste(paste(round(game$worst,4),w),collapse = "")
+paste(paste(round(game$average,4),w,'+'),collapse = "")
+paste(paste(round(game$best,4),w,'+'),collapse = "")
+paste(w,collapse = ",")
+```
+
+Suppose our investor has \$1 to allocate among the 12 assets with the unknown amounts $y_1,y_2,y_3,y_4,y_5,y_6,y_7,y_8,y_9,y_{10},y_{11},y_{12}$ respectively. That is,
+
+$y_1+y_2+y_3+y_4+y_5+y_6+y_7+y_8+y_9+y_{10}+y_{11}+y_{12}= 1$
+
+Then we can view y as weight.
+
+If the smallest return is R , the returns should be:
+
+$-0.0295 y_1-0.0387 y_2-0.0334 y_3-0.0255 y_4-0.0143 y_5-0.0332 y_6-0.0304 y_7-0.0399 y_8-0.043 y_9-0.0281 y_{10}-0.0406 y_{11}-0.0363 y_{12} \geq R$ 	{if worst return} 
+
+$0.0044 y_1 +0.0027 y_2 +0.0057 y_3 +0.0111 y_4 +0.0172 y_5 +0.0059 y_6 +0.0061 y_7 +0.004 y_8 -0.001 y_9 +0.0194 y_{10} +0.0023 y_{11} +0.0138 y_{12} \geq R$	{if average return}
+
+$0.0384 y_1 +0.0441 y_2 +0.0447 y_3 +0.0476 y_4 +0.0486 y_5 +0.0449 y_6 +0.0427 y_7 +0.0478 y_8 +0.0409 y_9 +0.0669 y_{10} +0.0451 y_{11} +0.064 y_{12} \geq R$	{if best return}
+
+$y_1,y_2,y_3,y_4,y_5,y_6,y_7,y_8,y_9,y_{10},y_{11},y_{12} \geq 0$
+
+
+```{r}
+suppressMessages(suppressWarnings(library(linprog)))  
+# form c vector 
+cvec <- matrix(c(1,rep(0,11)))
+
+# form b vector 
+bvec <- matrix(c(t(game)[,12],rep(1,11),1))
+
+# form matrix A
+A <- cbind(rep(1,3),rbind((game[12,1]-game[-12,1]),(game[12,2]-game[-12,2]),(game[12,3]-game[-12,3])))
+y_constrain <- c(0,rep(1,11))
+y_constrain_2 <- cbind(rep(0,11),diag(1,11,11))
+A <- rbind(A,y_constrain,y_constrain_2)
+
+res <- solveLP(cvec,bvec,A,maximum=TRUE)
+res$solution
+data.frame(cbind(candidate,'Weight'=c(res$solution[-1],0)))
+```
+
+Solving this problem by LP solution algorithm, the optimal solution is $y_1 = 0, y_2 = 0,y_3 = 0, y_4 = 0,y_5 = 0, y_6 = 0,y_7= 0, y_8 = 0, y_9 = 0, y_{10} = 0,y_{11} = 100,000, y_{12} = 0$, and R = 0.1941. That is, the investor must put all the money in the XLV account with the accumulated return rate at `r sprintf("%1.3f%%",res$solution[1]*100)` .
+
+
+
+
+## 6. Linear Programming
+
+### beta value 
+
+YTD instead of the average yearly return based on the past 5 years adjusted close pricewill be used in this method.
+```{r}
+library(XML)
+
+stock_summary <-read.csv('https://raw.githubusercontent.com/YunMai-SPS/DATA609_homework/master/DATA609_finalproject/stock_summary.csv')
+stock_summary <- stock_summary[,-1]
+colnames(stock_summary) <- c("symbol","Previous.Close","Open", "Bid", "Ask", "Day's.Range", "52 Week Range", "Volume", "Avg. Volume", "Net Assets", "NAV", "PE Ratio (TTM)", "Yield", "YTD Return",  "Beta (3y)","Expense Ratio (net)", "Inception Date")
+
+stock_summary[,"YTD Return"] <- str_replace_all(stock_summary[,"YTD Return"],"%","")
+stock_summary[,"YTD Return"] <- as.numeric(stock_summary[,"YTD Return"])
+
+#compare 5-years and 5-month average return
+plot_dt <- as.data.frame(cbind(stock_summary[,"YTD Return"]/100,ave_annual_return[-53]))
+plot_dt <- cbind(stock_summary[,"symbol"],plot_dt)
+plot_dt$id <- seq(1,52)
+colnames(plot_dt) <- c("symbol","YTD_Return","5_year_return","id")
+
+ggplot(plot_dt, aes(x = id)) +
+  geom_line( aes(y = plot_dt$'YTD_Return',color = 'YTD_Return')) +
+  geom_line( aes(y = plot_dt$'5_year_return', color = '5_year_return' )) +
+  theme_few()+
+  labs(title="Returns")+
+  ylab('Return')
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+Choose the ETFs with positive annual return.
+
+```{r}
+postive_return <- stock_summary[stock_summary[,'YTD Return'] >0,][,1]
+
+stock_summary[which(stock_summary$symbol %in% postive_return),c(1,14)]
+```
+
+Assuming there is only two outcomes for each investment, success and failure.
+
+Typically, market risks for individual stocks range from 0.5 to 2.5 or 3.0. 
+
+Assuming 2% is a point due to the minimal, yet apparent, system risk.
+
+Assuming the general risk for investing stock range from 10% to 50%.
+
+If there is a linear relation between beta value and risk, we can estimate risk based on the beta value.
+
+A negative beta  indicates an inverse relation to the market.Some stock like gold and gold stocks should have negative betas because they tended to do better when the stock market declines. The smaller the negative beta value, the more volatility. As such, negative beta should be converted to positive when calculate the risk as risk can not be negative.
+
+
+```{r}
+stock_summary[,'YTD Return']<- str_replace_all(stock_summary[,'YTD Return'],"%","")
+stock_summary[,c(14,15)] <- lapply(stock_summary[,c(14,15)],as.numeric)
+stock_summary[,'YTD Return']<- stock_summary[,'YTD Return']/100
+
+x <- c(0,0.5,3)
+y <- c(0.02,0.1,0.8)
+
+plot(x,y,main="linear relationship", xlab="beta-value", ylab="Risk")
+abline(lm(y ~ x))
+
+fit.lm <-lm(y ~ x)
+intercept <- coef(fit.lm)[1]
+slope <- coef(fit.lm)[2]
+
+stock_summary$risk <- intercept + slope*abs(stock_summary[,'Beta (3y)'])
+
+return_df <- stock_summary[stock_summary$`YTD Return`>0,c(1,14,15,18)]
+  
+return_df$exp.return <- (1-return_df$risk)*return_df[,'YTD Return']/100-return_df$risk
+
+return_df[return_df$exp.return>0,]
+
+E_return <- (1-return_df$risk)*return_df[,'YTD Return']-return_df$risk
+
+```
+
+But the expected return of the stocks are all less than 0, suggesting investment will fail in every stock list here.
+
+If the link function between beta value and risk is a quadratic function, the expected return of two of the stocks will be positive.
+
+```{r}
+fit.quadratic <- lm(y~x+I(x^2))
+c <-fit.quadratic$coefficients[1]
+a <- fit.quadratic$coefficients[3]
+b <- fit.quadratic$coefficients[2]
+
+# or  
+# solve(cbind(1, x, x^2), y)
+
+se <- seq(0, 30, 0.1)
+predictedcounts <- predict(fit.quadratic,list(x=se, x2=se^2))
+plot(x, y, pch=16, main="quadratic relationship",,xlab="beta-value", ylab="Risk", cex.lab = 1.3, col = "blue")
+lines(se, predictedcounts, col = "darkgreen", lwd = 1.5)
+
+stock_summary$risk.qdr <- a*(slope*stock_summary[,'Beta (3y)'])^2+b*slope*abs(stock_summary[,'Beta (3y)'])+c
+
+return_df <- stock_summary[,c(1,14,15,19)]
+  
+return_df$exp.return <- (1-stock_summary$risk.qdr)*stock_summary[,'YTD Return']-stock_summary$risk.qdr
+
+return_df[return_df$exp.return>0,]
+
+```
+
+We will select these two stocks, EWI and USO, with expected return as 2.88% and 3.28% respectively.
+
+To diversify the portfolio, we can invest bonds. U.S. savings bonds. U.S. savings bonds are endorsed by the federal government, they are considerted risk free and considered one of the safest types of investments. Suppose we purchase Series I Bonds, the current interest rate is 2.52%. The expected return for Series EE Bonds is: 100%*2.52% = 2.52%
+
+```{r}
+investment_summray <- return_df[return_df$exp.return>0,]
+investment_summray[,1] <- as.character(investment_summray[,1])
+colnames(investment_summray)<- c("Investment", "Rate of Return","Beta", "Risk","Expected Return")
+investment_summray <- rbind(investment_summray, c('Series I Bonds',0.0252,NA,0,0.0252))
+investment_summray[,c(2,3,4,5)] <- lapply(investment_summray[,c(2,3,4,5)],as.numeric)
+investment_summray
+```
+
+Suppose the manager have $50,000 and wish to invest. If we invest x, y and z amount of money in EWI, USO and Series I Bonds respectively, the expected net gain will be 0.0288x+0.0328y+0.0252z.
+
+Assuming there is only two outcomes for each investment, success and failure, there are eight different scenarios that may occur with our investments. The expected net gain and likelihood
+for each situation to occur is summarized in the table below (A,B and C represents EWI, USO and Series I Bonds respectively).
+
+
+```{r}
+s1 <- (1-investment_summray[1,4])
+s2 <- (1-investment_summray[2,4])
+s3 <- (1-investment_summray[3,4])
+
+outcome_summary <- as.data.frame(rbind(c("1", "S", "S", "S",round(s1*s2*s3,4)),c("2", "F", "S", "S",round((1-s1)*s2*s3,4)),c("3", "S", "F", "S",round(s1*(1-s2)*s3,4)),c("4", "S", "S", "F",round(s1*s2*(1-s3),4)),c("5", "F", "F", "S",round((1-s1)*(1-s2)*s3,4)),c("6", "F", "S", "F",round((1-s1)*s2*(1-s3),4)),c("7", "S", "F", "F",round(s1*(1-s2)*(1-s3),4)),c("8", "F", "F", "F",(1-s1)*(1-s2)*(1-s3))))
+
+outcome_summary <- cbind(outcome_summary,c('0.1028x+0.1490y+0.0252z','-x+0.1490y+0.0252z','0.1028x-y+0.0252z','0.1028x+0.1490y-z','-x-y+0.0252z','-x+0.1490y-z','0.1028x-y-z','-x-y-z'))
+colnames(outcome_summary) <- c("Case", "A", "B", "C", "Probability","Net Gain")
+outcome_summary[,5]<-as.numeric(as.character(outcome_summary[,5]))
+outcome_summary
+```
+
+```{r,eval=F}
+outcome_summary[1,5]+outcome_summary[2,5]+outcome_summary[5,5]
+
+```
+
+If we hope the gain being greater than or equal to 90%, there are three different combinations: 1+2+3,1+2+5,1+3.
+
+Optimize the portfolio by linear programing.
+
+The objective function is: 
+
+Max E(G) = 0.0288x+0.0328y+0.0252z
+
+subjected to: 
+
+x, y, z >0
+
+x + y + z <= 50000
+
+0.1028x+0.1490y+0.0252z >=0
+
+-x+0.1490y+0.0252z >= 0
+
+0.1028x-y+0.0252z >= 0
+
+
+or we solve this:
+
+Max E(G) = 0.0288x+0.0328y+0.0252z
+
+subjected to: 
+
+x, y, z >0
+
+x + y + z <= 50000
+
+0.1028x+0.1490y+0.0252z >=0
+
+-x+0.1490y+0.0252z >= 0
+
+-x-y+0.0252z >= 0
+
+
+or we solve this:
+
+Max E(G) = 0.0288x+0.0328y+0.0252z
+
+subjected to: 
+
+x, y, z >0
+
+x + y + z <= 50000
+
+0.1028x+0.1490y+0.0252z >=0
+
+0.1028x-y+0.0252z >= 0
+
+```{r}
+lprec <- make.lp(0, 3)
+lp.control(lprec,sense='max')
+set.objfn(lprec, c(investment_summray[1,5], investment_summray[2,5], investment_summray[3,5]))
+add.constraint(lprec, c(1, 1, 1), "<=", 50000)
+add.constraint(lprec, c(investment_summray[1,2],
+                        investment_summray[2,2],
+                        investment_summray[3,5]), ">=",0)
+add.constraint(lprec, c(-1,
+                        investment_summray[2,2],
+                        investment_summray[3,5]), ">=",0)
+add.constraint(lprec, c(investment_summray[1,2],
+                        -1,
+                        investment_summray[3,5]), ">=",0)
+
+RowNames <- c("ROW1", "ROW2", "ROW3","ROW4")
+ColNames <- c("COLONE", "COLTWO", "COLTHREE")
+dimnames(lprec) <- list(RowNames, ColNames)
+
+solve(lprec)
+
+get.objective(lprec)
+get.variables(lprec)
+
+```
+
+For the first scenario, we got the maximum net gain \$1275.164 by put \$1390.149 in EWI, \$1334.252 USO in and \$47275.599 in Series I Bonds.
+
+```{r}
+lprec_2 <- make.lp(0, 3)
+lp.control(lprec_2,sense='max')
+set.objfn(lprec_2, c(investment_summray[1,5], investment_summray[2,5], investment_summray[3,5]))
+add.constraint(lprec_2, c(1, 1, 1), "<=", 50000)
+add.constraint(lprec_2, c(investment_summray[1,2],
+                        investment_summray[2,2],
+                        investment_summray[3,5]), ">=",0)
+add.constraint(lprec_2, c(-1,
+                        investment_summray[2,2],
+                        investment_summray[3,5]), ">=",0)
+add.constraint(lprec_2, c(-1,
+                        -1,
+                        investment_summray[3,5]), ">=",0)
+
+RowNames <- c("ROW1", "ROW2", "ROW3","ROW4")
+ColNames <- c("COLONE", "COLTWO", "COLTHREE")
+dimnames(lprec_2) <- list(RowNames, ColNames)
+
+solve(lprec_2)
+
+get.objective(lprec_2)
+get.variables(lprec_2)
+
+```
+
+For the second senario, we got the maximum net gain \$1269.345 by put \$0 in EWI, \$1229.028 USO in and \$48770.972 in Series I Bonds.
+
+```{r}
+lprec_3 <- make.lp(0, 3)
+lp.control(lprec_3,sense='max')
+set.objfn(lprec_3, c(investment_summray[1,5], investment_summray[2,5], investment_summray[3,5]))
+add.constraint(lprec_3, c(1, 1, 1), "<=", 50000)
+add.constraint(lprec_3, c(investment_summray[1,2],
+                        investment_summray[2,2],
+                        investment_summray[3,5]), ">=",0)
+add.constraint(lprec_3, c(investment_summray[1,2],
+                        -1,
+                        investment_summray[3,5]), ">=",0)
+
+RowNames <- c("ROW1", "ROW2", "ROW3")
+ColNames <- c("COLONE", "COLTWO", "COLTHREE")
+dimnames(lprec_3) <- list(RowNames, ColNames)
+
+solve(lprec_3)
+
+get.objective(lprec_3)
+get.variables(lprec_3)
+
+```
+
+For the third senario, we got the maximum net gain \$1459.105 by put \$45339.137 in EWI, \$4660.863 USO in and \$0 in Series I Bonds.
+
+```{r}
+Net.Gain <- format(c(get.objective(lprec),get.objective(lprec_2),get.objective(lprec_3)))
+EWI = format(c(get.variables(lprec)[1],get.variables(lprec_2)[1],get.variables(lprec_3)[1]))
+USO = format(c(get.variables(lprec)[2],get.variables(lprec_2)[2],get.variables(lprec_3)[2]))
+Series.I.Bonds = format(c(get.variables(lprec)[3],get.variables(lprec_2)[3],get.variables(lprec_3)[3]))
+library(kableExtra)
+(opti_oneyear <- as.data.frame(cbind(EWI,USO,Series.I.Bonds,Net.Gain)))
+
+```  
+  
+
